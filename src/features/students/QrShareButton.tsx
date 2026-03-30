@@ -1,12 +1,13 @@
+import type { Student } from "../../types/app";
+import { resolveStudentQrLink } from "./qrHelpers";
+
 export function QrShareButton({
-  qrLink,
-  whatsappNumber,
-  studentName,
+  student,
 }: {
-  qrLink: string | null;
-  whatsappNumber: string;
-  studentName: string;
+  student: Pick<Student, "full_name" | "whatsapp_number" | "qr_link" | "qr_codes">;
 }) {
+  const qrLink = resolveStudentQrLink(student);
+
   if (!qrLink) {
     return (
       <button className="button secondary small-button" type="button" disabled>
@@ -16,9 +17,9 @@ export function QrShareButton({
   }
 
   const message = encodeURIComponent(
-    `Hello ${studentName}, here is your Chemistry class QR link: ${qrLink}`,
+    `Hello ${student.full_name}, here is your Chemistry class QR link: ${qrLink}`,
   );
-  const targetUrl = `https://wa.me/${whatsappNumber.replace(/\D/g, "")}?text=${message}`;
+  const targetUrl = `https://wa.me/${student.whatsapp_number.replace(/\D/g, "")}?text=${message}`;
 
   return (
     <a className="button secondary small-button" href={targetUrl} target="_blank" rel="noreferrer">

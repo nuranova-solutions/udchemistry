@@ -3,6 +3,7 @@ import {
   ChartNoAxesCombined,
   CircleDollarSign,
   ClipboardCheck,
+  CircleHelp,
   FileSpreadsheet,
   GraduationCap,
   School,
@@ -26,6 +27,7 @@ const navItems: Array<{
   { to: "/attendance", label: "Attendance", icon: ClipboardCheck, roles: ["admin", "staff"] },
   { to: "/payments", label: "Payments", icon: CircleDollarSign, roles: ["admin", "staff"] },
   { to: "/reports", label: "Reports", icon: FileSpreadsheet, roles: ["admin", "staff"] },
+  { to: "/help", label: "Help", icon: CircleHelp, roles: ["admin", "staff"] },
   { to: "/profile", label: "Profile", icon: Settings2, roles: ["admin", "staff"] },
 ];
 

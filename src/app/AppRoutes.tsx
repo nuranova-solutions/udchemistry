@@ -9,6 +9,7 @@ import { StudentsPage } from "../features/students/StudentsPage";
 import { AttendancePage } from "../features/attendance/AttendancePage";
 import { PaymentsPage } from "../features/payments/PaymentsPage";
 import { ReportsPage } from "../features/reports/ReportsPage";
+import { HelpPage } from "../features/help/HelpPage";
 import { ProfilePage } from "../features/profile/ProfilePage";
 import { PublicQrViewerPage } from "../features/students/PublicQrViewerPage";
 import type { Role } from "../types/app";
@@ -97,6 +98,7 @@ export function AppRoutes() {
           <Route path="/attendance" element={<AttendancePage />} />
           <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/help" element={<HelpPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
       </Route>

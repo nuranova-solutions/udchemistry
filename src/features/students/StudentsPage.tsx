@@ -384,16 +384,10 @@ export function StudentsPage() {
                 />
               ),
             },
-            { header: "QR", render: (row) => <QrLinkButton qrLink={row.qr_link} /> },
+            { header: "QR", render: (row) => <QrLinkButton student={row} /> },
             {
               header: "Share",
-              render: (row) => (
-                <QrShareButton
-                  qrLink={row.qr_link}
-                  whatsappNumber={row.whatsapp_number}
-                  studentName={row.full_name}
-                />
-              ),
+              render: (row) => <QrShareButton student={row} />,
             },
             {
               header: "Actions",

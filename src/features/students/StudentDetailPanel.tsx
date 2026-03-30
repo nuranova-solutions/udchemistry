@@ -143,12 +143,8 @@ export function StudentDetailPanel({
               </div>
 
               <div className="detail-header-actions">
-                <QrLinkButton qrLink={student.qr_link} />
-                <QrShareButton
-                  qrLink={student.qr_link}
-                  whatsappNumber={student.whatsapp_number}
-                  studentName={student.full_name}
-                />
+                <QrLinkButton student={student} />
+                <QrShareButton student={student} />
                 <button className="button ghost small-button icon-button" type="button" onClick={onClose}>
                   <X size={18} />
                   Close

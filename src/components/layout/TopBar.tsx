@@ -10,6 +10,7 @@ const routeTitles: Record<string, string> = {
   "/attendance": "Attendance",
   "/payments": "Payments",
   "/reports": "Reports",
+  "/help": "Help",
   "/profile": "Profile",
 };
 
