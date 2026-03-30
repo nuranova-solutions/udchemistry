@@ -371,6 +371,40 @@ select {
   flex-direction: column;
 }
 
+.app-footer {
+  margin: 0 1.25rem 1.25rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-radius: 24px;
+  border: 1px solid rgba(230, 222, 255, 0.92);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-sm);
+}
+
+.app-footer-copy,
+.app-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+}
+
+.app-footer-copy strong {
+  color: var(--secondary);
+}
+
+.app-footer-copy span,
+.app-footer-links a {
+  color: var(--text-muted);
+}
+
+.app-footer-links a:hover {
+  color: var(--primary);
+}
+
 .topbar {
   margin: 1.25rem;
   padding: 1.1rem 1.25rem;
@@ -722,9 +756,33 @@ select {
   font-size: 1rem;
 }
 
+.help-card-label {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
 .help-card p {
   margin: 0;
   color: var(--text-muted);
+}
+
+.help-contact-card strong {
+  margin-bottom: 0;
+}
+
+.help-contact-link {
+  color: var(--secondary);
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.help-contact-link:hover {
+  color: var(--primary);
 }
 
 .help-list {
@@ -988,6 +1046,13 @@ select {
   .topbar-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .app-footer,
+  .app-footer-copy,
+  .app-footer-links {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .topbar-user {

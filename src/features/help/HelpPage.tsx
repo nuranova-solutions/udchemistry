@@ -1,6 +1,7 @@
 import { useAuth } from "../auth/useAuth";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { SectionCard } from "../../components/ui/SectionCard";
+import { developerDetails } from "../../lib/appDeveloper";
 
 const pageGuides = [
   {
@@ -85,6 +86,26 @@ export function HelpPage() {
           <div className="help-list-item">Scan students as they arrive.</div>
           <div className="help-list-item">Review unpaid students and payment updates.</div>
           <div className="help-list-item">Open settings when you need to update your profile.</div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Developer details"
+        description="Support and development contact details for this app."
+      >
+        <div className="help-grid">
+          {developerDetails.map((detail) => (
+            <div key={detail.label} className="help-card help-contact-card">
+              <span className="help-card-label">{detail.label}</span>
+              {detail.href ? (
+                <a className="help-contact-link" href={detail.href}>
+                  {detail.value}
+                </a>
+              ) : (
+                <strong>{detail.value}</strong>
+              )}
+            </div>
+          ))}
         </div>
       </SectionCard>
     </div>
