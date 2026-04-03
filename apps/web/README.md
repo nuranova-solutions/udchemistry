@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Web Project
 
 This folder is the self-contained web project for UDchemistry.
@@ -47,17 +46,3 @@ apps/web/supabase/migrations
 ```
 
 This means the web app and its related database setup can be moved or shared as one folder.
-=======
-# UDchemistry
-
-Chemistry Class QR Attendance and Payment Management System.
-
-The web project is now self-contained in `apps/web`:
-
-- App source: `apps/web/src`
-- Static assets: `apps/web/public`
-- Supabase database migrations: `apps/web/supabase/migrations`
-- Web project docs: `apps/web/docs`
-
-Run the web app from `apps/web`.
->>>>>>> origin/codex/android-web-parity-push
