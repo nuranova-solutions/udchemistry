@@ -1,25 +1,4 @@
-# Local debug captures
-/*.png
-/*.xml
-/*.preferences_pb
-/apps/*.rar
-
-# Android
-/apps/android/.gradle/
-/apps/android/.idea/
-/apps/android/.kotlin/
-/apps/android/local.properties
-/apps/android/**/build/
-
-# Web
-/apps/web/node_modules/
-/apps/web/dist/
-/apps/web/dist-ssr/
-/apps/web/.env.local
-/apps/web/.env.production
-/apps/web/supabase/.temp/
-
-# Logs and editor files
+# Logs
 logs
 *.log
 npm-debug.log*
@@ -27,8 +6,17 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+supabase/.temp
+
+# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+.idea
 .DS_Store
 *.suo
 *.ntvs*
