@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
+import { createPortal } from "react-dom";
 
 interface StudentQrPreviewDialogProps {
   studentName: string;
@@ -30,9 +31,19 @@ export function StudentQrPreviewDialog({
     };
   }, [onClose]);
 
-  return (
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
     <div className="qr-preview-overlay" onClick={onClose}>
-      <div className="qr-preview-card" onClick={(event) => event.stopPropagation()}>
+      <div
+        className="qr-preview-card"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${studentName} QR preview`}
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="qr-preview-header">
           <div>
             <p className="eyebrow">Student QR</p>
@@ -76,6 +87,7 @@ export function StudentQrPreviewDialog({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
