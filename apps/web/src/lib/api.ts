@@ -3,6 +3,7 @@ import { format, startOfMonth, subDays } from "date-fns";
 import { supabase } from "./supabase/client";
 import type {
   AttendanceRecord,
+  ClassRecord,
   DashboardData,
   Institute,
   PaymentRecord,
@@ -35,9 +36,26 @@ export interface StudentFormValues {
   full_name: string;
   al_year: number;
   institute_id: string;
+  monthly_fee: number;
   whatsapp_number: string;
   joined_date: string;
   status: "active" | "inactive";
+}
+
+export interface ClassFormValues {
+  name: string;
+  institute_id: string;
+  al_year: number;
+  monthly_fee: number;
+  class_type: "general" | "extra";
+  weekday: ClassRecord["weekday"];
+  start_time: string;
+  end_time: string;
+  week_of_month: number | null;
+  active_from: string;
+  active_until: string | null;
+  status: "active" | "inactive";
+  notes: string;
 }
 
 export interface AttendanceFormValues {
@@ -55,12 +73,35 @@ export interface PaymentFormValues {
   paid_date: string | null;
 }
 
-const studentSelectFields =
-  "id, student_code, full_name, al_year, institute_id, qr_code_id, whatsapp_number, qr_link, joined_date, status, institutes(name), qr_codes(id, student_id, qr_data, share_token, qr_link, qr_image_path, qr_image_url, last_shared_at, generated_at)";
+let studentMonthlyFeeSupported: boolean | null = null;
+let classesSupported: boolean | null = null;
 
 const appUrl =
   (import.meta.env.VITE_APP_URL as string | undefined) ??
   (typeof window !== "undefined" ? window.location.origin : "http://localhost:5173");
+
+function studentSelectFields(includeMonthlyFee: boolean) {
+  const fields = [
+    "id",
+    "student_code",
+    "full_name",
+    "al_year",
+    "institute_id",
+    includeMonthlyFee ? "monthly_fee" : null,
+    "qr_code_id",
+    "whatsapp_number",
+    "qr_link",
+    "joined_date",
+    "status",
+    "institutes(name)",
+    "qr_codes(id, student_id, qr_data, share_token, qr_link, qr_image_path, qr_image_url, last_shared_at, generated_at)",
+  ].filter(Boolean);
+
+  return fields.join(", ");
+}
+
+const classSelectFields =
+  "id, name, institute_id, al_year, monthly_fee, class_type, weekday, start_time, end_time, week_of_month, active_from, active_until, status, notes, created_at, institutes(name)";
 
 function toTrendMap(labels: string[]) {
   return new Map(labels.map((label) => [label, 0]));
@@ -81,6 +122,27 @@ function cleanText(value: string | null | undefined) {
 function nullIfBlank(value: string | null | undefined) {
   const nextValue = cleanText(value);
   return nextValue.length ? nextValue : null;
+}
+
+function isMissingSchemaResource(
+  message: string | undefined,
+  tokens: string[],
+) {
+  const normalized = message?.toLowerCase() ?? "";
+  return tokens.every((token) => normalized.includes(token.toLowerCase())) &&
+    (
+      normalized.includes("does not exist") ||
+      normalized.includes("schema cache") ||
+      normalized.includes("could not find the table") ||
+      normalized.includes("could not find the '") ||
+      normalized.includes("relation")
+    );
+}
+
+function firstRelationName<T extends { name: string }>(
+  value: T | T[] | null | undefined,
+) {
+  return firstRelation(value);
 }
 
 function currentAppUrl() {
@@ -116,15 +178,29 @@ function mapStudentRow(row: unknown) {
 
   return {
     ...record,
+    monthly_fee: Number(record.monthly_fee ?? 0),
     institutes: firstRelation(record.institutes),
     qr_codes: firstRelation(record.qr_codes),
   } as Student;
 }
 
+function mapClassRow(row: unknown) {
+  const record = row as ClassRecord & {
+    institutes?: { name: string }[] | { name: string } | null;
+  };
+
+  return {
+    ...record,
+    monthly_fee: Number(record.monthly_fee ?? 0),
+    institutes: firstRelationName(record.institutes),
+  } as ClassRecord;
+}
+
 async function fetchStudentById(studentId: string) {
+  const includeMonthlyFee = await supportsStudentMonthlyFee();
   const { data, error } = await supabase
     .from("students")
-    .select(studentSelectFields)
+    .select(studentSelectFields(includeMonthlyFee))
     .eq("id", studentId)
     .single();
 
@@ -169,6 +245,54 @@ async function ensureStudentQrRecord(student: Pick<Student, "id" | "qr_code_id" 
   }
 }
 
+async function supportsStudentMonthlyFee() {
+  if (studentMonthlyFeeSupported === true) {
+    return true;
+  }
+
+  const { error } = await supabase.from("students").select("monthly_fee").limit(1);
+
+  if (!error) {
+    studentMonthlyFeeSupported = true;
+    return true;
+  }
+
+  if (isMissingSchemaResource(error.message, ["students", "monthly_fee"])) {
+    studentMonthlyFeeSupported = false;
+    return false;
+  }
+
+  throw error;
+}
+
+async function supportsClasses() {
+  if (classesSupported === true) {
+    return true;
+  }
+
+  const { error } = await supabase.from("classes").select("id").limit(1);
+
+  if (!error) {
+    classesSupported = true;
+    return true;
+  }
+
+  if (isMissingSchemaResource(error.message, ["classes"])) {
+    classesSupported = false;
+    return false;
+  }
+
+  throw error;
+}
+
+async function ensureClassesSupported() {
+  if (!(await supportsClasses())) {
+    throw new Error(
+      "Classes management is ready in the web app, but the live database has not applied the classes migration yet.",
+    );
+  }
+}
+
 export async function fetchInstitutes(profile: Profile) {
   let query = supabase
     .from("institutes")
@@ -186,6 +310,91 @@ export async function fetchInstitutes(profile: Profile) {
   }
 
   return (data ?? []) as Institute[];
+}
+
+export async function fetchClasses(profile: Profile) {
+  if (!(await supportsClasses())) {
+    return [] as ClassRecord[];
+  }
+
+  let query = supabase
+    .from("classes")
+    .select(classSelectFields)
+    .order("created_at", { ascending: false });
+
+  if (profile.role === "staff" && profile.institute_id) {
+    query = query.eq("institute_id", profile.institute_id);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as unknown[]).map(mapClassRow);
+}
+
+export async function createClass(profile: Profile, values: ClassFormValues) {
+  await ensureClassesSupported();
+
+  const { error } = await supabase.from("classes").insert({
+    name: cleanText(values.name),
+    institute_id: values.institute_id,
+    al_year: values.al_year,
+    monthly_fee: values.monthly_fee,
+    class_type: values.class_type,
+    weekday: values.weekday,
+    start_time: values.start_time,
+    end_time: values.end_time,
+    week_of_month: values.class_type === "extra" ? values.week_of_month : null,
+    active_from: values.active_from,
+    active_until: values.active_until,
+    status: values.status,
+    notes: nullIfBlank(values.notes),
+    created_by: profile.id,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function updateClass(classId: string, values: ClassFormValues) {
+  await ensureClassesSupported();
+
+  const { error } = await supabase
+    .from("classes")
+    .update({
+      name: cleanText(values.name),
+      institute_id: values.institute_id,
+      al_year: values.al_year,
+      monthly_fee: values.monthly_fee,
+      class_type: values.class_type,
+      weekday: values.weekday,
+      start_time: values.start_time,
+      end_time: values.end_time,
+      week_of_month: values.class_type === "extra" ? values.week_of_month : null,
+      active_from: values.active_from,
+      active_until: values.active_until,
+      status: values.status,
+      notes: nullIfBlank(values.notes),
+    })
+    .eq("id", classId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function deleteClass(classId: string) {
+  await ensureClassesSupported();
+
+  const { error } = await supabase.from("classes").delete().eq("id", classId);
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function createInstitute(values: InstituteFormValues) {
@@ -297,9 +506,10 @@ export async function deleteStaff(staffId: string) {
 }
 
 export async function fetchStudents(profile: Profile) {
+  const includeMonthlyFee = await supportsStudentMonthlyFee();
   let query = supabase
     .from("students")
-    .select(studentSelectFields)
+    .select(studentSelectFields(includeMonthlyFee))
     .order("created_at", { ascending: false });
 
   if (profile.role === "staff" && profile.institute_id) {
@@ -319,6 +529,7 @@ export async function createStudent(profile: Profile, values: StudentFormValues)
   const studentId = crypto.randomUUID();
   const qrCodeId = crypto.randomUUID();
   const qrRecord = await buildQrRecord(studentId);
+  const includeMonthlyFee = await supportsStudentMonthlyFee();
 
   const { error: studentError } = await supabase.from("students").insert({
     id: studentId,
@@ -326,6 +537,7 @@ export async function createStudent(profile: Profile, values: StudentFormValues)
     full_name: cleanText(values.full_name),
     al_year: values.al_year,
     institute_id: values.institute_id,
+    ...(includeMonthlyFee ? { monthly_fee: values.monthly_fee } : {}),
     qr_code_id: qrCodeId,
     whatsapp_number: cleanText(values.whatsapp_number),
     qr_link: qrRecord.qr_link,
@@ -353,6 +565,7 @@ export async function createStudent(profile: Profile, values: StudentFormValues)
 }
 
 export async function updateStudent(student: Student, values: StudentFormValues) {
+  const includeMonthlyFee = await supportsStudentMonthlyFee();
   const { error } = await supabase
     .from("students")
     .update({
@@ -360,6 +573,7 @@ export async function updateStudent(student: Student, values: StudentFormValues)
       full_name: cleanText(values.full_name),
       al_year: values.al_year,
       institute_id: values.institute_id,
+      ...(includeMonthlyFee ? { monthly_fee: values.monthly_fee } : {}),
       whatsapp_number: cleanText(values.whatsapp_number),
       joined_date: values.joined_date,
       status: values.status,
@@ -386,8 +600,7 @@ export async function fetchAttendance(profile: Profile) {
   let query = supabase
     .from("attendance")
     .select("id, student_id, attendance_date, status, marked_at, students!inner(full_name, institute_id)")
-    .order("marked_at", { ascending: false })
-    .limit(50);
+    .order("marked_at", { ascending: false });
 
   if (profile.role === "staff" && profile.institute_id) {
     query = query.eq("students.institute_id", profile.institute_id);
@@ -458,8 +671,7 @@ export async function fetchPayments(profile: Profile) {
     .from("payments")
     .select("id, student_id, payment_month, payment_year, amount, paid, paid_date, students!inner(full_name, institute_id)")
     .order("payment_year", { ascending: false })
-    .order("payment_month", { ascending: false })
-    .limit(50);
+    .order("payment_month", { ascending: false });
 
   if (profile.role === "staff" && profile.institute_id) {
     query = query.eq("students.institute_id", profile.institute_id);
@@ -665,13 +877,14 @@ export async function markCurrentMonthPaid(profile: Profile, studentId: string) 
   const now = new Date();
   const paymentMonth = now.getMonth() + 1;
   const paymentYear = now.getFullYear();
+  const student = await fetchStudentById(studentId);
 
   const { error } = await supabase.from("payments").upsert(
     {
       student_id: studentId,
       payment_month: paymentMonth,
       payment_year: paymentYear,
-      amount: 0,
+      amount: student.monthly_fee ?? 0,
       paid: true,
       paid_date: format(now, "yyyy-MM-dd"),
       marked_by: profile.id,

@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { SectionCard } from "../../components/ui/SectionCard";
 import { updateOwnPassword, updateProfile } from "../../lib/api";
+import { useTheme } from "../theme/ThemeProvider";
 import { useAuth } from "../auth/useAuth";
 
 const profileSchema = z.object({
@@ -18,6 +19,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export function ProfilePage() {
   const { profile, refreshProfile } = useAuth();
+  const { themeMode, setThemeMode } = useTheme();
   const [message, setMessage] = useState<string | null>(null);
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -59,8 +61,8 @@ export function ProfilePage() {
   return (
     <div className="page-stack">
       <PageHeader
-        title="Profile"
-        description="Users can edit only their own profile details. Password changes stay inside Supabase Auth."
+        title="Settings"
+        description="Update your account details, password, and theme mode without leaving the premium workspace."
       />
 
       <SectionCard title="Profile details" description="Update your display name and optional phone number.">
@@ -113,6 +115,21 @@ export function ProfilePage() {
             {updateMutation.isPending ? "Saving..." : "Save changes"}
           </button>
         </form>
+      </SectionCard>
+
+      <SectionCard title="Appearance" description="Keep the branded dark shell or switch to light mode when needed.">
+        <div className="theme-mode-row">
+          {(["system", "dark", "light"] as const).map((mode) => (
+            <button
+              key={mode}
+              className={`theme-mode-button ${themeMode === mode ? "active" : ""}`}
+              type="button"
+              onClick={() => setThemeMode(mode)}
+            >
+              {mode === "system" ? "System" : mode === "dark" ? "Dark" : "Light"}
+            </button>
+          ))}
+        </div>
       </SectionCard>
     </div>
   );

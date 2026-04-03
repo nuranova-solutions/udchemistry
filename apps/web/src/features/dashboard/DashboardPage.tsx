@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
   Bar,
   BarChart,
@@ -10,6 +11,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import {
+  BookOpenText,
+  ClipboardCheck,
+  GraduationCap,
+  Settings2,
+} from "lucide-react";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { SectionCard } from "../../components/ui/SectionCard";
 import { StatCard } from "../../components/ui/StatCard";
@@ -49,7 +56,7 @@ export function DashboardPage() {
                 <XAxis dataKey="label" />
                 <YAxis allowDecimals={false} />
                 <Tooltip />
-                <Line type="monotone" dataKey="value" stroke="#8C63FF" strokeWidth={3} />
+                <Line type="monotone" dataKey="value" stroke="var(--chart-primary)" strokeWidth={3} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -63,12 +70,40 @@ export function DashboardPage() {
                 <XAxis dataKey="label" />
                 <YAxis />
                 <Tooltip formatter={(value) => formatCurrency(Number(value ?? 0))} />
-                <Bar dataKey="value" fill="#1F2A48" radius={[10, 10, 0, 0]} />
+                <Bar dataKey="value" fill="var(--chart-secondary)" radius={[10, 10, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </SectionCard>
       </div>
+
+      <SectionCard
+        title="Action hub"
+        description="Jump into the most-used management flows without leaving the premium dashboard."
+      >
+        <div className="quick-action-grid">
+          <Link className="quick-action-card" to="/students">
+            <GraduationCap size={22} />
+            <strong>Students</strong>
+            <span>Register students, open QR previews, and manage monthly fees.</span>
+          </Link>
+          <Link className="quick-action-card" to="/classes">
+            <BookOpenText size={22} />
+            <strong>Classes</strong>
+            <span>Create weekly or extra classes and keep schedules organized.</span>
+          </Link>
+          <Link className="quick-action-card" to="/attendance">
+            <ClipboardCheck size={22} />
+            <strong>Scanner</strong>
+            <span>Open the scan-first attendance flow and correct records quickly.</span>
+          </Link>
+          <Link className="quick-action-card" to="/profile">
+            <Settings2 size={22} />
+            <strong>Settings</strong>
+            <span>Switch theme modes and update your own account details.</span>
+          </Link>
+        </div>
+      </SectionCard>
 
       <SectionCard title="New registration trend" description="A/L intake growth for the most recent months.">
         <div className="chart-shell">
@@ -78,7 +113,7 @@ export function DashboardPage() {
               <XAxis dataKey="label" />
               <YAxis allowDecimals={false} />
               <Tooltip />
-              <Bar dataKey="value" fill="#A47FFF" radius={[10, 10, 0, 0]} />
+              <Bar dataKey="value" fill="var(--chart-primary-soft)" radius={[10, 10, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

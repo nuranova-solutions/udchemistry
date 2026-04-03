@@ -31,11 +31,6 @@ export function LoginPage() {
     try {
       await signIn(values.identifier, values.password);
     } catch (error) {
-      if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
-        setErrorMessage("Cannot reach Supabase from this deployment. Check the production connection settings.");
-        return;
-      }
-
       if (error instanceof Error) {
         setErrorMessage(error.message);
         return;

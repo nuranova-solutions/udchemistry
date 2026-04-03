@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import { DataTable } from "../../components/ui/DataTable";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { SectionCard } from "../../components/ui/SectionCard";
-import { fetchAttendance, fetchPayments, fetchStudents } from "../../lib/api";
+import { fetchAttendance, fetchClasses, fetchPayments, fetchStudents } from "../../lib/api";
 import { formatDate } from "../../lib/utils/formatters";
 import { useAuth } from "../auth/useAuth";
 
@@ -13,13 +13,14 @@ export function ReportsPage() {
   const reportsQuery = useQuery({
     queryKey: ["reports", profile?.id, profile?.institute_id],
     queryFn: async () => {
-      const [students, attendance, payments] = await Promise.all([
+      const [students, attendance, payments, classes] = await Promise.all([
         fetchStudents(profile!),
         fetchAttendance(profile!),
         fetchPayments(profile!),
+        fetchClasses(profile!),
       ]);
 
-      return { students, attendance, payments };
+      return { students, attendance, payments, classes };
     },
     enabled: Boolean(profile),
   });
@@ -29,8 +30,8 @@ export function ReportsPage() {
   return (
     <div className="page-stack">
       <PageHeader
-        title="Reports"
-        description="Export operational data to Excel or generate a quick PDF summary for administration."
+        title="Summary"
+        description="Export operational data to Excel or generate a quick PDF snapshot for administration."
         actions={
           <div className="inline-actions">
             <button
@@ -48,6 +49,7 @@ export function ReportsPage() {
                     data.students.map((student) => ({
                       name: student.full_name,
                       al_year: student.al_year,
+                      monthly_fee: student.monthly_fee,
                       whatsapp_number: student.whatsapp_number,
                       institute: student.institutes?.name ?? "",
                       status: student.status,
@@ -91,6 +93,40 @@ export function ReportsPage() {
             </button>
 
             <button
+              className="button secondary"
+              type="button"
+              onClick={() => {
+                if (!data) {
+                  return;
+                }
+
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(
+                  workbook,
+                  XLSX.utils.json_to_sheet(
+                    data.classes.map((classRecord) => ({
+                      name: classRecord.name,
+                      institute: classRecord.institutes?.name ?? "",
+                      al_year: classRecord.al_year,
+                      class_type: classRecord.class_type,
+                      weekday: classRecord.weekday,
+                      start_time: classRecord.start_time,
+                      end_time: classRecord.end_time,
+                      monthly_fee: classRecord.monthly_fee,
+                      active_from: classRecord.active_from,
+                      active_until: classRecord.active_until,
+                      status: classRecord.status,
+                    })),
+                  ),
+                  "Classes",
+                );
+                XLSX.writeFile(workbook, "classes-report.xlsx");
+              }}
+            >
+              Export Classes
+            </button>
+
+            <button
               className="button ghost"
               type="button"
               onClick={() => {
@@ -106,6 +142,7 @@ export function ReportsPage() {
                 doc.text(`Students: ${data.students.length}`, 14, 46);
                 doc.text(`Attendance rows: ${data.attendance.length}`, 14, 56);
                 doc.text(`Payments rows: ${data.payments.length}`, 14, 66);
+                doc.text(`Classes rows: ${data.classes.length}`, 14, 76);
                 doc.save("chemistry-summary.pdf");
               }}
             >

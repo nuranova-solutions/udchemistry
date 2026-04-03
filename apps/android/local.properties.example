@@ -1,0 +1,4 @@
+sdk.dir=C\:\\Users\\YourName\\AppData\\Local\\Android\\Sdk
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+APP_PUBLIC_URL=http://localhost:5173

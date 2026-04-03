@@ -33,6 +33,13 @@ function emptyForm(): PaymentFormValues {
   };
 }
 
+function monthlyFeeForStudent(
+  students: Array<{ id: string; monthly_fee: number }> | undefined,
+  studentId: string,
+) {
+  return Number(students?.find((student) => student.id === studentId)?.monthly_fee ?? 0);
+}
+
 export function PaymentsPage() {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
@@ -63,6 +70,7 @@ export function PaymentsPage() {
       setFormValues((currentValues) => ({
         ...currentValues,
         student_id: studentsQuery.data?.[0]?.id ?? "",
+        amount: monthlyFeeForStudent(studentsQuery.data, studentsQuery.data?.[0]?.id ?? ""),
       }));
     }
   }, [editingPayment, formValues.student_id, studentsQuery.data]);
@@ -82,6 +90,7 @@ export function PaymentsPage() {
       setFormValues({
         ...emptyForm(),
         student_id: studentsQuery.data?.[0]?.id ?? "",
+        amount: monthlyFeeForStudent(studentsQuery.data, studentsQuery.data?.[0]?.id ?? ""),
       });
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
       await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -100,6 +109,7 @@ export function PaymentsPage() {
       setFormValues({
         ...emptyForm(),
         student_id: studentsQuery.data?.[0]?.id ?? "",
+        amount: monthlyFeeForStudent(studentsQuery.data, studentsQuery.data?.[0]?.id ?? ""),
       });
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
       await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -135,6 +145,7 @@ export function PaymentsPage() {
     setFormValues({
       ...emptyForm(),
       student_id: studentsQuery.data?.[0]?.id ?? "",
+      amount: monthlyFeeForStudent(studentsQuery.data, studentsQuery.data?.[0]?.id ?? ""),
     });
     setFeedback(null);
   }
@@ -151,12 +162,12 @@ export function PaymentsPage() {
     <div className="page-stack">
       <PageHeader
         title="Payments"
-        description="Admins can add, edit, save, and delete monthly payment records without leaving the web panel."
+        description="Admins can add, edit, save, and delete monthly payment records with the student's default monthly fee prefilled."
       />
 
       <SectionCard
         title={editingPayment ? "Edit payment" : "Add payment"}
-        description="Payment actions from attendance scans still work, and this form handles manual corrections."
+        description="Payment actions from attendance scans still work, and this form now mirrors the monthly fee saved on each student record."
       >
         <form
           className="management-form"
@@ -174,7 +185,14 @@ export function PaymentsPage() {
                 id="payment_student"
                 className="input"
                 value={formValues.student_id}
-                onChange={(event) => handleChange("student_id", event.target.value)}
+                onChange={(event) => {
+                  const nextStudentId = event.target.value;
+                  setFormValues((currentValues) => ({
+                    ...currentValues,
+                    student_id: nextStudentId,
+                    amount: editingPayment ? currentValues.amount : monthlyFeeForStudent(studentsQuery.data, nextStudentId),
+                  }));
+                }}
                 required
               >
                 <option value="" disabled>

@@ -1,4 +1,5 @@
 export type Role = "admin" | "staff";
+export type ThemeMode = "system" | "dark" | "light";
 
 export interface Profile {
   id: string;
@@ -25,6 +26,25 @@ export interface Institute {
   created_at?: string;
 }
 
+export interface ClassRecord {
+  id: string;
+  name: string;
+  institute_id: string;
+  al_year: number;
+  monthly_fee: number;
+  class_type: "general" | "extra";
+  weekday: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+  start_time: string;
+  end_time: string;
+  week_of_month: number | null;
+  active_from: string;
+  active_until: string | null;
+  status: "active" | "inactive";
+  notes: string | null;
+  created_at?: string;
+  institutes?: Pick<Institute, "name"> | null;
+}
+
 export interface QrCodeRecord {
   id: string;
   student_id: string;
@@ -43,6 +63,7 @@ export interface Student {
   full_name: string;
   al_year: number;
   institute_id: string;
+  monthly_fee: number;
   qr_code_id: string | null;
   whatsapp_number: string;
   qr_link: string | null;

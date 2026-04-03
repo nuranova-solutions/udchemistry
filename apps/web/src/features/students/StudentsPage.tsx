@@ -7,16 +7,19 @@ import { StatusBadge } from "../../components/ui/StatusBadge";
 import {
   createStudent,
   deleteStudent,
+  fetchAttendance,
   fetchInstitutes,
+  fetchPayments,
   fetchStudents,
   type StudentFormValues,
   updateStudent,
 } from "../../lib/api";
-import { formatDate } from "../../lib/utils/formatters";
+import { formatCurrency, formatDate } from "../../lib/utils/formatters";
 import type { Student } from "../../types/app";
 import { useAuth } from "../auth/useAuth";
 import { QrLinkButton } from "./QrLinkButton";
 import { QrShareButton } from "./QrShareButton";
+import { StudentDetailPanel } from "./StudentDetailPanel";
 
 function todayString() {
   return new Date().toISOString().slice(0, 10);
@@ -28,6 +31,7 @@ function emptyForm(instituteId = ""): StudentFormValues {
     full_name: "",
     al_year: new Date().getFullYear(),
     institute_id: instituteId,
+    monthly_fee: 0,
     whatsapp_number: "",
     joined_date: todayString(),
     status: "active",
@@ -42,6 +46,7 @@ export function StudentsPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [instituteFilter, setInstituteFilter] = useState("all");
   const [yearFilter, setYearFilter] = useState("all");
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
   const studentsQuery = useQuery({
     queryKey: ["students", profile?.id, profile?.institute_id],
@@ -52,6 +57,18 @@ export function StudentsPage() {
   const institutesQuery = useQuery({
     queryKey: ["institutes", profile?.id, profile?.institute_id],
     queryFn: () => fetchInstitutes(profile!),
+    enabled: Boolean(profile),
+  });
+
+  const attendanceQuery = useQuery({
+    queryKey: ["attendance", "student-insight", profile?.id, profile?.institute_id],
+    queryFn: () => fetchAttendance(profile!),
+    enabled: Boolean(profile),
+  });
+
+  const paymentsQuery = useQuery({
+    queryKey: ["payments", "student-insight", profile?.id, profile?.institute_id],
+    queryFn: () => fetchPayments(profile!),
     enabled: Boolean(profile),
   });
 
@@ -131,6 +148,7 @@ export function StudentsPage() {
       full_name: student.full_name,
       al_year: student.al_year,
       institute_id: student.institute_id,
+      monthly_fee: Number(student.monthly_fee ?? 0),
       whatsapp_number: student.whatsapp_number,
       joined_date: student.joined_date,
       status: student.status as StudentFormValues["status"],
@@ -146,6 +164,7 @@ export function StudentsPage() {
 
   const allStudents = studentsQuery.data ?? [];
   const availableYears = Array.from(new Set(allStudents.map((student) => String(student.al_year)))).sort();
+  const selectedStudent = allStudents.find((student) => student.id === selectedStudentId) ?? null;
   const visibleStudents = allStudents.filter((student) => {
     const matchesInstitute =
       instituteFilter === "all" || student.institute_id === instituteFilter;
@@ -158,7 +177,7 @@ export function StudentsPage() {
     <div className="page-stack">
       <PageHeader
         title="Students"
-        description="Admins can change student details, while each registration still creates one unique QR and shareable link."
+        description="Admins can change student details, monthly class fees, and QR access while each registration keeps one unique shareable QR."
         actions={
           <button className="button secondary" type="button" onClick={handleReset}>
             Add student
@@ -168,7 +187,7 @@ export function StudentsPage() {
 
       <SectionCard
         title={editingStudent ? "Edit student" : "Add student"}
-        description="Saving a new student keeps their QR link ready for open, download, or WhatsApp sharing."
+        description="Saving a new student keeps their QR link ready for open, download, or share while storing the monthly fee used in payments."
       >
         <form
           className="management-form"
@@ -254,6 +273,22 @@ export function StudentsPage() {
             </div>
 
             <div>
+              <label className="field-label" htmlFor="student_monthly_fee">
+                Monthly class fee (LKR)
+              </label>
+              <input
+                id="student_monthly_fee"
+                className="input"
+                type="number"
+                min="0"
+                step="0.01"
+                value={formValues.monthly_fee}
+                onChange={(event) => handleChange("monthly_fee", Number(event.target.value))}
+                required
+              />
+            </div>
+
+            <div>
               <label className="field-label" htmlFor="student_joined">
                 Joined date
               </label>
@@ -304,7 +339,7 @@ export function StudentsPage() {
 
       <SectionCard
         title="Student roster"
-        description="Admins can filter by institute and A/L year, then edit, delete, or share each student's QR."
+        description="Admins can filter by institute and A/L year, then edit, delete, or share each student's QR and monthly fee details."
         actions={
           <div className="filter-row">
             {profile?.role === "admin" ? (
@@ -342,10 +377,22 @@ export function StudentsPage() {
           getRowKey={(row) => row.id}
           columns={[
             { header: "Code", render: (row) => row.student_code ?? "-" },
-            { header: "Student", render: (row) => row.full_name },
+            {
+              header: "Student",
+              render: (row) => (
+                <button
+                  className="student-link-button"
+                  type="button"
+                  onClick={() => setSelectedStudentId(row.id)}
+                >
+                  {row.full_name}
+                </button>
+              ),
+            },
             { header: "A/L year", render: (row) => row.al_year },
             { header: "Institute", render: (row) => row.institutes?.name ?? "-" },
             { header: "WhatsApp", render: (row) => row.whatsapp_number },
+            { header: "Monthly fee", render: (row) => formatCurrency(Number(row.monthly_fee ?? 0)) },
             { header: "Joined", render: (row) => formatDate(row.joined_date) },
             {
               header: "Status",
@@ -356,16 +403,10 @@ export function StudentsPage() {
                 />
               ),
             },
-            { header: "QR", render: (row) => <QrLinkButton qrLink={row.qr_link} /> },
+            { header: "QR", render: (row) => <QrLinkButton student={row} /> },
             {
               header: "Share",
-              render: (row) => (
-                <QrShareButton
-                  qrLink={row.qr_link}
-                  whatsappNumber={row.whatsapp_number}
-                  studentName={row.full_name}
-                />
-              ),
+              render: (row) => <QrShareButton student={row} />,
             },
             {
               header: "Actions",
@@ -394,6 +435,15 @@ export function StudentsPage() {
           ]}
         />
       </SectionCard>
+
+      <StudentDetailPanel
+        student={selectedStudent}
+        instituteName={selectedStudent?.institutes?.name ?? "-"}
+        attendance={attendanceQuery.data ?? []}
+        payments={paymentsQuery.data ?? []}
+        loading={attendanceQuery.isLoading || paymentsQuery.isLoading}
+        onClose={() => setSelectedStudentId(null)}
+      />
     </div>
   );
 }
