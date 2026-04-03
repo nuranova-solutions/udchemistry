@@ -1,21 +1,38 @@
-# UDchemistry
+# UDChemistry Web
 
-Chemistry class attendance, payments, and institute management system.
+UDChemistry web application for attendance, payments, QR, classes, and institute management.
 
 ## Project Layout
 
-- `apps/android` - Android app
-- `apps/web` - Web app, Vite project, and Supabase migrations
+- `src` - React + TypeScript application code
+- `public` - static assets
+- `supabase/migrations` - database schema and SQL migrations
+- `docs` - planning and supporting documentation
+- `.env.example` - required environment variables
 
-## Working Directories
+## Local Development
 
-Run each project from its own folder:
+```bash
+npm install
+npm run dev
+```
 
-- Android Studio / Gradle: `apps/android`
-- Web app / Vite: `apps/web`
+## Vercel Deployment
 
-## Notes
+Deploy this repository directly as a Vite app.
 
-- The repository root is now just the workspace container.
-- Web docs live in `apps/web/docs`.
-- Web database migrations live in `apps/web/supabase/migrations`.
+Set these environment variables in Vercel:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_APP_URL`
+
+Set `VITE_APP_URL` to your production domain so generated QR links point to the live site.
+
+## Environment Variables
+
+Copy values from `.env.example` into `.env.local` and provide:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_APP_URL`
